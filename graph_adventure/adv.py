@@ -87,24 +87,22 @@ def bfs_dead_end(our_graph, search_start):
     # If we've visited all remain locations              
     return None
 
-
-
+# Creates a row in our Graph that reflects the amount for exits for a new room.
 def add_to_map(room):
     graph[room] = {}
     for ex in player.currentRoom.getExits():
         graph[room][ex] = '?'
 
-#BASE CASE - 
+# BASE CASE - When our graph is equal to the size of our input, we've traversed every room. 
 while len(graph) != len(roomGraph):
     # Identify Current Room and Exits
     current_room = player.currentRoom.id
-    # Add to Graph
+    # Add to current_room to graph if we haven't been there before
     if current_room not in graph:
         add_to_map(current_room)
+
     # Check to see if there are any available rooms to explore.
-    # if '?' in graph[current_room].values():
-    # Start Moving
-    # Find the first ? and start moving that way == Store in a variable.
+    # Find the first ? and start moving that way == Store in a variable because at some point there will be 0 ? left. 
     where_to_go = None
     for exits in graph[current_room]:
         if graph[current_room][exits] == '?':
