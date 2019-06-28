@@ -4,6 +4,21 @@ from world import World
 
 import random
 
+# A Queue to have and to hold
+class Queue():
+    def __init__(self):
+        self.queue = []
+    def __repr__(self):
+        return f'{self.queue}'
+    def enqueue(self, value):
+        self.queue.append(value)
+    def dequeue(self):
+        if self.size() > 0:
+            return self.queue.pop(0)
+        else:
+            return None
+    def size(self):
+        return len(self.queue)
 # Load world
 world = World()
 
@@ -19,9 +34,120 @@ world.loadGraph(roomGraph)
 world.printRooms()
 player = Player("Name", world.startingRoom)
 
+#DFT ALL Exits until we get to a room w/ no unexplored exits then turn backtrack to a room w/ unexpected exit.
+#When we hit a dead end perform a BFS to travel back in time.
+#When there are no more explore exits, we are done. 
 
 # FILL THIS IN
 traversalPath = ['n', 's']
+# Initiate our graph
+graph = {}
+
+oppositeDirections = {
+    "n": "s",
+    "e": "w",
+    "s": "n",
+    "w": "e"
+}
+# Pass in our Graph and our current Room index
+#Identify our shortest route out of our dead end and traverse backwards
+def bfs_dead_end(our_graph, search_start):
+    # Create an empty Queue FIFO LIST
+    q = Queue()
+    # Create an empty visited 
+    visited = {}
+    # Add the room_id to the queue
+    q.enqueue([search_start])
+        # While the queue is not empty...
+    while q.size() > 0:
+        # Dequeue the first Id
+        path = q.dequeue()
+        # Find the last item in path
+        v = path[-1]
+        # print(v)
+        # If it is has not been visited...
+        if v not in visited:
+            # Mark it as visited
+            visited[v] = path
+            # print(visited[v])
+            # print(f'this is path {path} in visited {visited}')
+            # Loop over the current position values and see if there are any '?' left
+            for i in our_graph[v]:
+                # print(our_graph[v])
+                # print('Path',our_graph[path[-1]])
+                if our_graph[v][i] == '?':
+                #If there are ? we're at a searchable room return the path 
+                    return path
+            for i in our_graph[v]:
+                #If there are no ? we're at there's no where to travel, eneque rooms.
+                new_que = our_graph[v][i]
+                path_copy = path.copy()
+                path_copy.append(new_que)
+                q.enqueue(path_copy)
+    # If we've visited all remain locations              
+    return None
+
+# Creates a row in our Graph that reflects the amount for exits for a new room.
+def add_to_map(room):
+    graph[room] = {}
+    for ex in player.currentRoom.getExits():
+        graph[room][ex] = '?'
+
+# BASE CASE - When our graph is equal to the size of our input, we've traversed every room. 
+while len(graph) != len(roomGraph):
+    # Identify Current Room and Exits
+    current_room = player.currentRoom.id
+    # Add to current_room to graph if we haven't been there before
+    if current_room not in graph:
+        add_to_map(current_room)
+
+    # Check to see if there are any available rooms to explore.
+    # Find the first ? and start moving that way == Store in a variable because at some point there will be 0 ? left. 
+    where_to_go = None
+    for exits in graph[current_room]:
+        if graph[current_room][exits] == '?':
+            where_to_go = exits
+        # If there are no more exits
+        if where_to_go is not None:
+            # Direction Set, add to TraversalPath then Move that direction
+            player.travel(where_to_go)
+            traversalPath.append(where_to_go)
+            prev_room = current_room
+            current_room = player.currentRoom.id
+            # If we haven't been there we need to add to our Graph
+            if current_room not in graph:
+                add_to_map(current_room)
+            # Swap out the room information -->
+            graph[prev_room][where_to_go] = current_room
+            graph[current_room][oppositeDirections[where_to_go]] = prev_room
+            print(graph)
+            break
+# else:
+    routes = bfs_dead_end(graph, current_room)
+    print('mG', graph)
+    if routes is not None:
+        # Loop over Returned Routes
+        for route in routes:
+            # Loop over our Graph
+            for direction in graph[current_room]:
+                # If the current graph item, has a direction that equals our route, go proceed to take that. Until we run out or items in our array, indicating the end of our BFS
+                if graph[current_room][direction] == route:
+                    traversalPath.append(direction)
+                    player.travel(direction)
+            #Set the current_room to the update traversal
+            current_room = player.currentRoom.id
+
+    
+    # direction_to_travel = 'n'
+    # player.travel(direction_to_travel)
+
+    # prevRoom = current_room
+    # current_room = player.currentRoom.id
+    # add_to_map(current_room)
+    # # Store and swap current room information with previous
+    # graph[prevRoom][direction_to_travel] = current_room
+    # graph[current_room][oppositeDirections[direction_to_travel]] = prevRoom
+
 
 
 # TRAVERSAL TEST
